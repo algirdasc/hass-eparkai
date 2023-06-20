@@ -10,33 +10,46 @@ this Home Assistant (HA) component scrapes solar power generation data every hou
 # Installation
 
 ### HACS
-- Navigate to HACS Integrations
-- Click `Custom repositories`
-- Paste repository URL `https://github.com/algirdasc/hass-eparkai` to `Repository` field
-- Choose `Integration` category
-- Click `Add`
-- Install & configure component 
-- Restart HA
+1. Navigate to HACS Integrations
+2. Click `Custom repositories`
+3. Paste repository URL `https://github.com/algirdasc/hass-eparkai` to `Repository` field
+4. Choose `Integration` category
+5. Click `Add`
+6. Install & configure component 
+7. Restart HA
 
 ### Native
 
-- Upload `custom_components` directory to your HA `config` directory
-- Configure component
-- Restart HA
+1. Upload `custom_components` directory to your HA `config` directory
+2. Configure component
+3. Restart HA
 
 # Configuration
 
-- Add entry to `configuration.yaml`:
+1. Add entry to `configuration.yaml`:
 ```yaml
 eparkai:
   username: your_username
   password: your_password
   client_id: 12345
 ```
-- Add new sensor:
+2. Add new sensor:
 ```yaml
 - platform: eparkai
   generation_id: 123456789
 ```
-- Restart Home Assistant
-- Add new sensor `sensor.eparkai_123456789` to your [Energy dashboard](https://my.home-assistant.io/redirect/config_energy/)
+3. Restart Home Assistant
+4. Add new sensor `sensor.eparkai_123456789` to your [Energy dashboard](https://my.home-assistant.io/redirect/config_energy/)
+
+### Getting client and generation IDs
+
+1. Login to your eParkai.lt account
+2. Go to your generation page
+3. Look to your browsers address bar - you'll see something like `eparkai.lt/user/12345/generation`. That `12345` is your `client_id`.
+4. Now open source code of the page and look for `generation_electricity`, option value is your `generation_id`.
+
+# TODO
+
+- Automatically add all power plants as a sensors
+- UI config flow
+- History import
