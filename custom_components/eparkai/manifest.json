@@ -1,0 +1,10 @@
+{
+  "domain": "eparkai",
+  "name": "eParkai.lt Solar Energy",
+  "documentation": "https://github.com/algirdasc/hass-eparkai",
+  "dependencies": [],
+  "codeowners": ["@algirdasc"],
+  "issue_tracker": "https://github.com/algirdasc/hass-eparkai/issues",
+  "requirements": ["requests"],
+  "version": "1.0.0"
+}
