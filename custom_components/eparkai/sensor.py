@@ -73,7 +73,7 @@ class EParkaiSensor(CoordinatorEntity, RestoreSensor, SensorEntity):
         state = await self.async_get_last_sensor_data()
         if state:
             self._attr_native_value = state.native_value
-            self.async_schedule_update_ha_state(force_refresh=True)
+        self.async_schedule_update_ha_state(force_refresh=True)
 
     @callback
     def _handle_coordinator_update(self) -> None:
