@@ -15,13 +15,13 @@ this Home Assistant (HA) component scrapes solar power generation data every hou
 3. Paste repository URL `https://github.com/algirdasc/hass-eparkai` to `Repository` field
 4. Choose `Integration` category
 5. Click `Add`
-6. Install & configure component 
+6. Install & configure component (see Configuration)
 7. Restart HA
 
 ### Native
 
 1. Upload `custom_components` directory to your HA `config` directory
-2. Configure component
+2. Configure component (see Configuration)
 3. Restart HA
 
 # Configuration
@@ -32,16 +32,12 @@ eparkai:
   username: your_username
   password: your_password
   client_id: 12345
+  power_plants:
+    power_plant_name: power_plant_id
 ```
-*Optional: you can set `percentage` to reduce generation calculation by specified percent.*
-
-2. Add new sensor:
-```yaml
-- platform: eparkai
-  power_plant_id: 123456789
-```
-3. Restart Home Assistant
-4. Add new sensor `sensor.eparkai_123456789` to your [Energy dashboard](https://my.home-assistant.io/redirect/config_energy/)
+*Optional: you can set `generation_percentage` to reduce generation calculation by specified percent.*
+2. Restart Home Assistant
+3. Add new statistic `eparkai:energy_generation_123456789` to your [Energy dashboard](https://my.home-assistant.io/redirect/config_energy/)
 
 ### Getting client and generation IDs
 
@@ -52,8 +48,7 @@ eparkai:
 
 # TODO
 
- - [ ]  Add more logging
- - [ ]  Automatically add all power plants as a sensors
- - [ ]  UI config flow
- - [ ]  History import
- - [x]  Add percentage as a tax calculation
+ - [x]  Add more logging
+ - [x]  History import
+ - [x]  Add generation percentage deduction (as a tax calculation)
+ 

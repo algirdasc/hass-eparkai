@@ -102,20 +102,11 @@ class EParkaiClient:
 
                 self.generation[power_plant_id][ts] = float(value)
 
-    def get_generation(self, power_plant_id: str) -> dict | None:
+    def get_generation_data(self, power_plant_id: str) -> dict | None:
         if power_plant_id not in self.generation:
             return None
 
         return self.generation[power_plant_id]
-
-    def get_latest_generation(self, power_plant_id: str) -> float | None:
-        if power_plant_id not in self.generation:
-            return None
-
-        generation = self.generation[power_plant_id]
-        last_key = list(generation.keys())[-1]
-
-        return generation[last_key]
 
     @staticmethod
     def parse_date(date: str) -> str:
