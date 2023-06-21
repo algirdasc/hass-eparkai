@@ -82,7 +82,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
     hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STARTED, async_first_start)
 
-    async_track_time_interval(hass, async_import_generation, timedelta(seconds=10))
+    async_track_time_interval(hass, async_import_generation, timedelta(hours=1))
 
     return True
 
