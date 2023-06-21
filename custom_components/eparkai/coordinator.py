@@ -1,25 +1,17 @@
 import datetime
 import logging
-
 from datetime import datetime, timedelta
 
-from homeassistant.core import HomeAssistant
 from homeassistant.components.recorder import DOMAIN as RECORDER_DOMAIN, get_instance
 from homeassistant.components.recorder.models import StatisticData, StatisticMetaData
-from homeassistant.util import dt as dt_util
-from homeassistant.const import UnitOfEnergy
-
 from homeassistant.components.recorder.statistics import (
-    async_add_external_statistics,
     async_import_statistics,
     statistics_during_period
 )
-
-from homeassistant.helpers.update_coordinator import (
-    CoordinatorEntity,
-    DataUpdateCoordinator,
-    UpdateFailed,
-)
+from homeassistant.const import UnitOfEnergy
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
+from homeassistant.util import dt as dt_util
 
 from .eparkai_client import EParkaiClient
 
@@ -41,8 +33,6 @@ class EParkaiCoordinator(DataUpdateCoordinator):
         self.generation_percentage = percentage
 
     async def _async_update_data(self) -> dict:
-        data = {}
-
         await self.hass.async_add_executor_job(self.client.login)
 
         for context in self.async_contexts():
@@ -52,9 +42,7 @@ class EParkaiCoordinator(DataUpdateCoordinator):
 
             await self.import_statistics(context)
 
-            data[power_plant_id] = self.client.get_latest_generation(power_plant_id)
-
-        return data
+        return {}
 
     async def import_statistics(self, context: dict) -> None:
         entity_name = context["entity_name"]

@@ -1,18 +1,14 @@
 import logging
 
-import voluptuous as vol
 import homeassistant.helpers.config_validation as cv
-
-from homeassistant.core import HomeAssistant, callback
-from homeassistant.helpers.typing import ConfigType
-
+import voluptuous as vol
 from homeassistant.const import (
-    EVENT_HOMEASSISTANT_STARTED,
     CONF_USERNAME,
     CONF_PASSWORD,
-    CONF_CLIENT_ID,
-    UnitOfEnergy
+    CONF_CLIENT_ID
 )
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers.typing import ConfigType
 
 from .coordinator import EParkaiCoordinator
 from .eparkai_client import EParkaiClient

@@ -1,14 +1,19 @@
 import logging
-import requests
-
 from datetime import datetime
+
+import requests
 
 from .form_parser import FormParser
 
 LOGIN_URL = "https://www.eparkai.lt/user/login?destination=/user/{}/generation"
 GENERATION_URL = "https://www.eparkai.lt/user/{}/generation?ajax_form=1&_wrapper_format=drupal_ajax"
 
-MONTHS = ["Sausio", "Vasario", "Kovo", "Balandžio", "Gegužės", "Birželio", "Liepos", "Rugpjūčio", "Rugsėjo", "Spalio", "Lapkričio", "Gruodžio"]
+MONTHS = [
+    "Sausio", "Vasario", "Kovo",
+    "Balandžio", "Gegužės", "Birželio",
+    "Liepos", "Rugpjūčio", "Rugsėjo",
+    "Spalio", "Lapkričio", "Gruodžio"
+]
 
 _LOGGER = logging.getLogger(__name__)
 

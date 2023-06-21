@@ -1,34 +1,22 @@
 import logging
 
-import voluptuous as vol
 import homeassistant.helpers.config_validation as cv
-
-from homeassistant.core import HomeAssistant, callback
-from homeassistant.helpers.entity import DeviceInfo
+import voluptuous as vol
 from homeassistant.components.sensor import (
     PLATFORM_SCHEMA,
-    RestoreSensor,
     SensorDeviceClass,
     SensorEntity,
     SensorStateClass,
-    SensorExtraStoredData,
 )
+from homeassistant.const import UnitOfEnergy
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from homeassistant.const import (
-    CONF_USERNAME,
-    CONF_PASSWORD,
-    CONF_CLIENT_ID,
-    UnitOfEnergy
-)
-
-from homeassistant.helpers.update_coordinator import (
-    CoordinatorEntity,
-    DataUpdateCoordinator,
-    UpdateFailed,
-)
-
-from .coordinator import EParkaiCoordinator
 from . import DOMAIN
+from .coordinator import EParkaiCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -39,14 +27,19 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
 })
 
 
-async def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
+async def async_setup_platform(
+    hass: HomeAssistant,
+    config: ConfigType,
+    async_add_entities: AddEntitiesCallback,
+    discovery_info: DiscoveryInfoType | None = None,
+) -> None:
     coordinator: EParkaiCoordinator = hass.data[DOMAIN]
     async_add_entities([EParkaiSensor(hass, config, coordinator)])
 
 
-class EParkaiSensor(CoordinatorEntity, RestoreSensor, SensorEntity):
+class EParkaiSensor(CoordinatorEntity, SensorEntity):
 
-    def __init__(self, hass, config, coordinator):
+    def __init__(self, hass: HomeAssistant, config: ConfigType, coordinator):
         power_plant_id = config.get(CONF_POWER_PLANT_ID)
 
         self._coordinator = coordinator
@@ -69,15 +62,12 @@ class EParkaiSensor(CoordinatorEntity, RestoreSensor, SensorEntity):
 
     async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()
-        state = await self.async_get_last_sensor_data()
-        if state:
-            self._attr_native_value = state.native_value
         self.async_schedule_update_ha_state(force_refresh=True)
 
-    @callback
-    def _handle_coordinator_update(self) -> None:
-        if self._coordinator.data is None or self._coordinator_context not in self._coordinator.data:
-            return
-
-        self._attr_native_value = self._coordinator.data[self._coordinator_context]
-        self.async_write_ha_state()
+    # @callback
+    # def _handle_coordinator_update(self) -> None:
+    #     if self._coordinator.data is None or self._coordinator_context not in self._coordinator.data:
+    #         return
+    #
+    #     self._attr_native_value = self._coordinator.data[self._coordinator_context]
+    #     self.async_write_ha_state()
