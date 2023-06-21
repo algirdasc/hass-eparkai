@@ -15,7 +15,6 @@ from homeassistant.components.recorder.statistics import (
     statistics_during_period
 )
 
-
 from homeassistant.helpers.update_coordinator import (
     CoordinatorEntity,
     DataUpdateCoordinator,
@@ -39,7 +38,7 @@ class EParkaiCoordinator(DataUpdateCoordinator):
 
         self.hass = hass
         self.client = client
-        self.percentage = percentage
+        self.generation_percentage = percentage
 
     async def _async_update_data(self) -> dict:
         data = {}
@@ -82,16 +81,13 @@ class EParkaiCoordinator(DataUpdateCoordinator):
         if generation is None:
             return statistics
 
-        _LOGGER.error("Got items: {}".format(generation.items()))
-
         for ts, generated_kwh in generation.items():
             dt_object = datetime.fromtimestamp(ts)
 
-            if self.percentage is not None:
-                generated_kwh = generated_kwh * (self.percentage / 100)
+            generated_kwh = generated_kwh * (self.generation_percentage / 100)
 
             if sum_ is None:
-                sum_ = await self.get_yesterday_sum(dt_object, StatisticMetaData)
+                sum_ = await self.get_yesterday_sum(dt_object, metadata)
 
             statistic_data: StatisticData = {
                 "start": dt_object.replace(tzinfo=dt_util.get_time_zone("Europe/Vilnius")),
@@ -99,7 +95,7 @@ class EParkaiCoordinator(DataUpdateCoordinator):
                 "sum": sum_
             }
 
-            _LOGGER.error(f"{dt_object} generated {generated_kwh}, sum={sum_}")
+            _LOGGER.info(f"{dt_object} generated {generated_kwh}, sum={sum_}")
 
             sum_ += generated_kwh
             statistics.append(statistic_data)
@@ -111,7 +107,7 @@ class EParkaiCoordinator(DataUpdateCoordinator):
         start = date - timedelta(days=1)
         end = date - timedelta(minutes=1)
 
-        _LOGGER.info(f"For {date} looking stats between {start} and {end}")
+        _LOGGER.info(f"For {statistic_id} at {date} looking stats between {start} and {end}")
 
         stat = await get_instance(self.hass).async_add_executor_job(
             statistics_during_period,
@@ -127,7 +123,4 @@ class EParkaiCoordinator(DataUpdateCoordinator):
         if statistic_id not in stat:
             return 0.0
 
-        sum_ = stat[statistic_id][0]["sum"]
-        _LOGGER.error(f"{stat[statistic_id]} sum: {sum_}")
-
-        return sum_
+        return stat[statistic_id][0]["sum"]

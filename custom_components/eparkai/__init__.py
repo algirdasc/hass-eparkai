@@ -42,11 +42,14 @@ CONFIG_SCHEMA = vol.Schema(
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     hass.data.setdefault(DOMAIN, {})
 
-    hass.data[DOMAIN] = EParkaiCoordinator(hass, EParkaiClient(
-        username=config[DOMAIN][CONF_USERNAME],
-        password=config[DOMAIN][CONF_PASSWORD],
-        client_id=config[DOMAIN][CONF_CLIENT_ID],
+    hass.data[DOMAIN] = EParkaiCoordinator(
+        hass,
+        EParkaiClient(
+            username=config[DOMAIN][CONF_USERNAME],
+            password=config[DOMAIN][CONF_PASSWORD],
+            client_id=config[DOMAIN][CONF_CLIENT_ID]
+        ),
         percentage=config[DOMAIN][CONF_PERCENTAGE]
-    ))
+    )
 
     return True
