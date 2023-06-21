@@ -31,7 +31,7 @@ CONFIG_SCHEMA = vol.Schema(
                 vol.Required(CONF_USERNAME): cv.string,
                 vol.Required(CONF_PASSWORD): cv.string,
                 vol.Required(CONF_CLIENT_ID): cv.string,
-                vol.Optional(CONF_PERCENTAGE): vol.All(int, vol.Range(min=0, max=100))
+                vol.Optional(CONF_PERCENTAGE, default=100): vol.All(int, vol.Range(min=0, max=100))
             }
         )
     },
