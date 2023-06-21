@@ -2,12 +2,13 @@ import logging
 import requests
 
 from datetime import datetime
-from typing import Optional
 
 from .form_parser import FormParser
 
-LOGIN_URL = 'https://www.eparkai.lt/user/login?destination=/user/{}/generation'
-GENERATION_URL = 'https://www.eparkai.lt/user/{}/generation?ajax_form=1&_wrapper_format=drupal_ajax'
+LOGIN_URL = "https://www.eparkai.lt/user/login?destination=/user/{}/generation"
+GENERATION_URL = "https://www.eparkai.lt/user/{}/generation?ajax_form=1&_wrapper_format=drupal_ajax"
+
+MONTHS = ["Sausio", "Vasario", "Kovo", "Balandžio", "Gegužės", "Birželio", "Liepos", "Rugpjūčio", "Rugsėjo", "Spalio", "Lapkričio", "Gruodžio"]
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -19,7 +20,7 @@ class EParkaiClient:
         self.password: str = password
         self.client_id: str = client_id
         self.session: requests.Session = requests.Session()
-        self.cookies: Optional[dict] = None
+        self.cookies: dict | None = None
         self.form_parser: FormParser = FormParser()
         self.generation: dict = {}
 
@@ -27,10 +28,10 @@ class EParkaiClient:
         response = self.session.post(
             LOGIN_URL.format(self.client_id),
             data={
-                'name': self.username,
-                'pass': self.password,
-                'login_type': 1,
-                'form_id': 'user_login_form'
+                "name": self.username,
+                "pass": self.password,
+                "login_type": 1,
+                "form_id": "user_login_form"
             },
             allow_redirects=True
         )
@@ -38,31 +39,31 @@ class EParkaiClient:
         response.raise_for_status()
 
         if len(response.cookies) == 0:
-            _LOGGER.error('Failed to get cookies after login. Possible invalid credentials')
+            _LOGGER.error("Failed to get cookies after login. Possible invalid credentials")
             return
 
         self.cookies = requests.utils.dict_from_cookiejar(response.cookies)
 
         self.form_parser.feed(response.text)
 
-    def fetch(self, generation_id: str, date: datetime) -> dict:
+    def fetch(self, power_plant_id: str, date: datetime) -> dict:
         headers = {
-            'Accept': 'application/json',
-            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-            'X-Requested-With': 'XMLHttpRequest',
+            "Accept": "application/json",
+            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+            "X-Requested-With": "XMLHttpRequest",
         }
 
         response = self.session.post(
             GENERATION_URL.format(self.client_id),
             data={
-                'period': 'day',
-                'current_date': date.strftime('%Y-%m-%d'),
-                'generation_electricity': generation_id,
-                'form_build_id': self.form_parser.get('form_build_id'),
-                'form_token': self.form_parser.get('form_token'),
-                'form_id': self.form_parser.get('form_id'),
-                '_drupal_ajax': '1',
-                '_triggering_element_name': 'period',
+                "period": "week",
+                "current_date": date.strftime("%Y-%m-%d"),
+                "generation_electricity": power_plant_id,
+                "form_build_id": self.form_parser.get("form_build_id"),
+                "form_token": self.form_parser.get("form_token"),
+                "form_id": self.form_parser.get("form_id"),
+                "_drupal_ajax": "1",
+                "_triggering_element_name": "period",
             },
             headers=headers,
             cookies=self.cookies,
@@ -71,24 +72,50 @@ class EParkaiClient:
 
         response.raise_for_status()
 
+        self.generation[power_plant_id] = {}
+
         return response.json()
 
-    def update_generation(self, generation_id: str, date: datetime) -> None:
-        data = self.fetch(generation_id, date)
+    def update_generation(self, power_plant_id: str, date: datetime) -> None:
+        data = self.fetch(power_plant_id, date)
 
         for d in data:
-            if d['command'] != 'settings':
+            if d["command"] != "settings":
                 continue
 
-            if 'product_generation_form' not in d['settings'] or not d['settings']['product_generation_form']:
+            if "product_generation_form" not in d["settings"] or not d["settings"]["product_generation_form"]:
                 continue
 
-            data = d['settings']['product_generation_form']['data']
+            generation = d["settings"]["product_generation_form"]
 
-            self.generation[generation_id] = [i for i in data if i is not None]
+            for idx, value in enumerate(generation["data"]):
+                if value is None:
+                    continue
 
-    def get_latest_generation(self, generation_id: str) -> Optional[float]:
-        if generation_id not in self.generation:
+                date = self.parse_date(" ".join(generation["labels"][idx]))
+                ts = int(datetime.timestamp(datetime.strptime(date, "%Y %m %d %H:%M")))
+
+                self.generation[power_plant_id][ts] = float(value)
+
+    def get_generation(self, power_plant_id: str) -> dict | None:
+        if power_plant_id not in self.generation:
             return None
 
-        return self.generation[generation_id][-1]
+        return self.generation[power_plant_id]
+
+    def get_latest_generation(self, power_plant_id: str) -> float | None:
+        if power_plant_id not in self.generation:
+            return None
+
+        generation = self.generation[power_plant_id]
+        last_key = list(generation.keys())[-1]
+
+        return generation[last_key]
+
+    @staticmethod
+    def parse_date(date: str) -> str:
+        [year, month, day, time] = date.split(" ")
+
+        month = str(MONTHS.index(month) + 1)
+
+        return " ".join([year, month.zfill(2), day, time])

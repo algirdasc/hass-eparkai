@@ -3,9 +3,9 @@
 
 # Intro
 While [eparkai.lt](https://www.eparkai.lt/) does not offer any kind of API for remote solar power plant users, 
-this Home Assistant (HA) component scrapes solar power generation data every hour and adds it as a sensor.  
+this Home Assistant (HA) component scrapes solar power generation data every hour and adds it as a sensor.
 
-**This component is in testing stage! Any feedback or requests should be raised as [issue](https://github.com/algirdasc/hass-eparkai/issues)**.
+**This component is in testing stage! Any feedback or requests should be raised as an [issue](https://github.com/algirdasc/hass-eparkai/issues)**.
 
 # Installation
 
@@ -36,7 +36,7 @@ eparkai:
 2. Add new sensor:
 ```yaml
 - platform: eparkai
-  generation_id: 123456789
+  power_plant_id: 123456789
 ```
 3. Restart Home Assistant
 4. Add new sensor `sensor.eparkai_123456789` to your [Energy dashboard](https://my.home-assistant.io/redirect/config_energy/)
@@ -46,10 +46,11 @@ eparkai:
 1. Login to your eParkai.lt account
 2. Go to your generation page
 3. Look to your browsers address bar - you'll see something like `eparkai.lt/user/12345/generation`. That `12345` is your `client_id`.
-4. Now open source code of the page and look for `generation_electricity`, option value is your `generation_id`.
+4. Now open source code of the page and look for `generation_electricity`, option value is your `power_plant_id`.
 
 # TODO
 
-- Automatically add all power plants as a sensors
-- UI config flow
-- History import
+ - [ ]  Add more logging
+ - [ ]  Automatically add all power plants as a sensors
+ - [ ]  UI config flow
+ - [ ]  History import

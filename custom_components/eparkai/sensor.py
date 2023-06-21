@@ -28,15 +28,14 @@ from homeassistant.helpers.update_coordinator import (
 )
 
 from .coordinator import EParkaiCoordinator
-from . import (
-    DOMAIN,
-    CONF_GENERATION_ID
-)
+from . import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
+CONF_POWER_PLANT_ID = "power_plant_id"
+
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
-    vol.Required(CONF_GENERATION_ID): cv.string,
+    vol.Required(CONF_POWER_PLANT_ID): cv.string,
 })
 
 
@@ -48,12 +47,14 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
 class EParkaiSensor(CoordinatorEntity, RestoreSensor, SensorEntity):
 
     def __init__(self, hass, config, coordinator):
+        power_plant_id = config.get(CONF_POWER_PLANT_ID)
+
         self._coordinator = coordinator
-        self._coordinator_context = config.get(CONF_GENERATION_ID)
+        self._coordinator_context = config.get(CONF_POWER_PLANT_ID)
         self._hass = hass
         self._config = config
-        self._attr_name = '{}_{}'.format(DOMAIN, config.get(CONF_GENERATION_ID))
-        self._attr_unique_id = 'uid_{}_{}'.format(DOMAIN, config.get(CONF_GENERATION_ID))
+        self._attr_name = f"{DOMAIN}_{power_plant_id}"
+        self._attr_unique_id = f"uid_{self._attr_name}"
         self._attr_native_unit_of_measurement = UnitOfEnergy.KILO_WATT_HOUR
         self._attr_device_class = SensorDeviceClass.ENERGY
         self._attr_state_class = SensorStateClass.TOTAL
@@ -64,9 +65,7 @@ class EParkaiSensor(CoordinatorEntity, RestoreSensor, SensorEntity):
             name=self._attr_name
         )
 
-        self.restored_data: SensorExtraStoredData | None = None
-
-        super().__init__(coordinator, context=self._coordinator_context)
+        super().__init__(coordinator, context={"power_plant_id": power_plant_id, "entity_name": self._attr_name})
 
     async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()
@@ -77,7 +76,7 @@ class EParkaiSensor(CoordinatorEntity, RestoreSensor, SensorEntity):
 
     @callback
     def _handle_coordinator_update(self) -> None:
-        if self._coordinator_context not in self._coordinator.data:
+        if self._coordinator.data is None or self._coordinator_context not in self._coordinator.data:
             return
 
         self._attr_native_value = self._coordinator.data[self._coordinator_context]

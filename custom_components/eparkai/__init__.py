@@ -21,7 +21,7 @@ _LOGGER = logging.getLogger(__name__)
 
 DOMAIN = "eparkai"
 
-CONF_GENERATION_ID = "generation_id"
+CONF_POWER_PLANT_ID = "generation_id"
 
 CONFIG_SCHEMA = vol.Schema(
     {
@@ -47,43 +47,3 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     ))
 
     return True
-
-
-
-# def _generate_mean_statistics(
-#         start: datetime, end: datetime, init_value: float, max_diff: float
-# ) -> list[StatisticData]:
-#     statistics: list[StatisticData] = []
-#     mean = init_value
-#     now = start
-#     while now < end:
-#         mean = mean + random() * max_diff - max_diff / 2
-#         statistics.append(
-#             {
-#                 "start": now,
-#                 "mean": mean,
-#                 "min": mean - random() * max_diff,
-#                 "max": mean + random() * max_diff,
-#             }
-#         )
-#         now = now + timedelta(hours=1)
-#
-#     return statistics
-#
-#
-# async def _insert_statistics(hass: HomeAssistant) -> None:
-#     now = dt_util.now()
-#     yesterday = now - timedelta(days=1)
-#     yesterday_midnight = yesterday.replace(hour=0, minute=0, second=0, microsecond=0)
-#     today_midnight = yesterday_midnight + timedelta(days=1)
-#
-#     metadata = {
-#         "source": DOMAIN,
-#         "name": None,
-#         "statistic_id": "sensor.eparkai_4419234",
-#         "unit_of_measurement": UnitOfEnergy.KILO_WATT_HOUR,
-#         "has_mean": True,
-#         "has_sum": False,
-#     }
-#     statistics = _generate_mean_statistics(yesterday_midnight, today_midnight, 15, 1)
-#     async_import_statistics(hass, metadata, statistics)
