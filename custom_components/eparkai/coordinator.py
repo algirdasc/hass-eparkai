@@ -12,7 +12,7 @@ from homeassistant.const import UnitOfEnergy
 from homeassistant.components.recorder.statistics import (
     async_add_external_statistics,
     async_import_statistics,
-    get_last_statistics,
+    statistics_during_period
 )
 
 
@@ -29,7 +29,7 @@ _LOGGER = logging.getLogger(__name__)
 
 class EParkaiCoordinator(DataUpdateCoordinator):
 
-    def __init__(self, hass: HomeAssistant, client: EParkaiClient):
+    def __init__(self, hass: HomeAssistant, client: EParkaiClient, percentage: int | None):
         super().__init__(
             hass,
             _LOGGER,
@@ -39,6 +39,7 @@ class EParkaiCoordinator(DataUpdateCoordinator):
 
         self.hass = hass
         self.client = client
+        self.percentage = percentage
 
     async def _async_update_data(self) -> dict:
         data = {}
@@ -74,28 +75,59 @@ class EParkaiCoordinator(DataUpdateCoordinator):
 
     async def get_statistics(self, context: dict, metadata: StatisticMetaData) -> list[StatisticData]:
         statistics: list[StatisticData] = []
-        statistic_id = metadata["statistic_id"]
         power_plant_id = context["power_plant_id"]
-        sum_ = 0.0
+        sum_ = None
 
         generation = self.client.get_generation(power_plant_id)
         if generation is None:
             return statistics
 
-        last_stats = await get_instance(self.hass).async_add_executor_job(
-            get_last_statistics, self.hass, 1, statistic_id, False, {"sum"}
-        )
-
-        if statistic_id in last_stats:
-            sum_ = last_stats[statistic_id][0]["sum"] or 0
+        _LOGGER.error("Got items: {}".format(generation.items()))
 
         for ts, generated_kwh in generation.items():
-            dt_object = datetime.fromtimestamp(ts).replace(tzinfo=dt_util.get_time_zone("Europe/Vilnius"))
-            sum_ += generated_kwh
+            dt_object = datetime.fromtimestamp(ts)
+
+            if self.percentage is not None:
+                generated_kwh = generated_kwh * (self.percentage / 100)
+
+            if sum_ is None:
+                sum_ = await self.get_yesterday_sum(dt_object, StatisticMetaData)
+
             statistic_data: StatisticData = {
-                "start": dt_object,
+                "start": dt_object.replace(tzinfo=dt_util.get_time_zone("Europe/Vilnius")),
+                "state": generated_kwh,
                 "sum": sum_
             }
+
+            _LOGGER.error(f"{dt_object} generated {generated_kwh}, sum={sum_}")
+
+            sum_ += generated_kwh
             statistics.append(statistic_data)
 
         return statistics
+
+    async def get_yesterday_sum(self, date: datetime, metadata: StatisticMetaData) -> float:
+        statistic_id = metadata["statistic_id"]
+        start = date - timedelta(days=1)
+        end = date - timedelta(minutes=1)
+
+        _LOGGER.info(f"For {date} looking stats between {start} and {end}")
+
+        stat = await get_instance(self.hass).async_add_executor_job(
+            statistics_during_period,
+            self.hass,
+            start,
+            end,
+            {statistic_id},
+            "day",
+            None,
+            {"sum"},
+        )
+
+        if statistic_id not in stat:
+            return 0.0
+
+        sum_ = stat[statistic_id][0]["sum"]
+        _LOGGER.error(f"{stat[statistic_id]} sum: {sum_}")
+
+        return sum_

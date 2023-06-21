@@ -33,6 +33,8 @@ eparkai:
   password: your_password
   client_id: 12345
 ```
+*Optional: you can set `percentage` to reduce generation calculation by specified percent.*
+
 2. Add new sensor:
 ```yaml
 - platform: eparkai
@@ -54,3 +56,4 @@ eparkai:
  - [ ]  Automatically add all power plants as a sensors
  - [ ]  UI config flow
  - [ ]  History import
+ - [x]  Add percentage as a tax calculation

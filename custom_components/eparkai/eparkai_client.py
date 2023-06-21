@@ -90,7 +90,7 @@ class EParkaiClient:
 
             for idx, value in enumerate(generation["data"]):
                 if value is None:
-                    continue
+                    value = 0
 
                 date = self.parse_date(" ".join(generation["labels"][idx]))
                 ts = int(datetime.timestamp(datetime.strptime(date, "%Y %m %d %H:%M")))

@@ -57,7 +57,7 @@ class EParkaiSensor(CoordinatorEntity, RestoreSensor, SensorEntity):
         self._attr_unique_id = f"uid_{self._attr_name}"
         self._attr_native_unit_of_measurement = UnitOfEnergy.KILO_WATT_HOUR
         self._attr_device_class = SensorDeviceClass.ENERGY
-        self._attr_state_class = SensorStateClass.TOTAL
+        self._attr_state_class = SensorStateClass.TOTAL_INCREASING
         self._attr_native_value = None
 
         self._attr_device_info = DeviceInfo(

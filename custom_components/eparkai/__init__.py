@@ -22,6 +22,7 @@ _LOGGER = logging.getLogger(__name__)
 DOMAIN = "eparkai"
 
 CONF_POWER_PLANT_ID = "generation_id"
+CONF_PERCENTAGE = "percentage"
 
 CONFIG_SCHEMA = vol.Schema(
     {
@@ -30,6 +31,7 @@ CONFIG_SCHEMA = vol.Schema(
                 vol.Required(CONF_USERNAME): cv.string,
                 vol.Required(CONF_PASSWORD): cv.string,
                 vol.Required(CONF_CLIENT_ID): cv.string,
+                vol.Optional(CONF_PERCENTAGE): vol.All(int, vol.Range(min=0, max=100))
             }
         )
     },
@@ -43,7 +45,8 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     hass.data[DOMAIN] = EParkaiCoordinator(hass, EParkaiClient(
         username=config[DOMAIN][CONF_USERNAME],
         password=config[DOMAIN][CONF_PASSWORD],
-        client_id=config[DOMAIN][CONF_CLIENT_ID]
+        client_id=config[DOMAIN][CONF_CLIENT_ID],
+        percentage=config[DOMAIN][CONF_PERCENTAGE]
     ))
 
     return True
