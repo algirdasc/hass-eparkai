@@ -26,16 +26,24 @@ this Home Assistant (HA) component scrapes solar power generation data every hou
 
 # Configuration
 
-1. Add entry to `configuration.yaml`:
+| Name                          |  Type  | Default | Description                                                                                          |
+|-------------------------------|:------:|:-------:|------------------------------------------------------------------------------------------------------|
+| username ***(required)***     | string |         | eParkai.lt username / email                                                                          |
+| password ***(required)***     | string |         | eParkai.lt password                                                                                  |
+| client_id ***(required)***    | string |         | Client ID. See *Getting client and generation IDs*                                                   |
+| power_plants ***(required)*** |  dict  |         | Power plant name and power plant generation ID object (can be multiple)                              |
+| generation_percentage         |  int   |  `100`  | Set to false if you want to use thermostat`s internal temperature sensor for temperature calculation |
+
+1. Add entry to `configuration.yaml`, for example:
 ```yaml
 eparkai:
   username: your_username
   password: your_password
-  client_id: 12345
+  client_id: '12345'
   power_plants:
-    power_plant_name: power_plant_id
+    My Power Plant: '123456'
+    My Other Power Plant: '65431'
 ```
-*Optional: you can set `generation_percentage` to reduce generation calculation by specified percent.*
 2. Restart Home Assistant
 3. Add new statistic `eparkai:energy_generation_123456789` to your [Energy dashboard](https://my.home-assistant.io/redirect/config_energy/)
 
