@@ -1,11 +1,17 @@
 # Your support
+This open-source project is developed in my free time. 
+Your donation would help me dedicate more time and resources to improve project, add new features, fix bugs, 
+as well as improve motivation and helps me understand, that this project is useful not only for me, but for more users.
+
 <a href="https://www.buymeacoffee.com/Ua0JwY9" target="_blank"><img src="https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png" alt="Buy Me A Coffee" style="height: 41px !important;width: 174px !important;box-shadow: 0px 3px 2px 0px rgba(190, 190, 190, 0.5) !important;-webkit-box-shadow: 0px 3px 2px 0px rgba(190, 190, 190, 0.5) !important;" ></a>
 
 # Intro
 While [eparkai.lt](https://www.eparkai.lt/) does not offer any kind of API for remote solar power plant users, 
-this Home Assistant (HA) component scrapes solar power generation data every hour and adds it as a sensor.
+this Home Assistant (HA) component scrapes solar power generation data every hour and imports to long-term HA statistics.
 
-**This component is in testing stage! Any feedback or requests should be raised as an [issue](https://github.com/algirdasc/hass-eparkai/issues)**.
+### Disclaimer
+
+**This component is in testing stage! Errors or miscalculation, breaking changes should be expected! Any feedback or requests should be raised as an [issue](https://github.com/algirdasc/hass-eparkai/issues)**.
 
 # Installation
 
