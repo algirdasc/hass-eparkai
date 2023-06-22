@@ -26,13 +26,13 @@ this Home Assistant (HA) component scrapes solar power generation data every hou
 
 # Configuration
 
-| Name                          |  Type  | Default | Description                                                                                          |
-|-------------------------------|:------:|:-------:|------------------------------------------------------------------------------------------------------|
-| username ***(required)***     | string |         | eParkai.lt username / email                                                                          |
-| password ***(required)***     | string |         | eParkai.lt password                                                                                  |
-| client_id ***(required)***    | string |         | Client ID. See *Getting client and generation IDs*                                                   |
-| power_plants ***(required)*** |  dict  |         | Power plant name and power plant generation ID object (can be multiple)                              |
-| generation_percentage         |  int   |  `100`  | Set to false if you want to use thermostat`s internal temperature sensor for temperature calculation |
+| Name                          |  Type  | Default | Description                                                                     |
+|-------------------------------|:------:|:-------:|---------------------------------------------------------------------------------|
+| username ***(required)***     | string |         | eParkai.lt username / email                                                     |
+| password ***(required)***     | string |         | eParkai.lt password                                                             |
+| client_id ***(required)***    | string |         | Client ID. See *Getting client and generation IDs*                              |
+| power_plants ***(required)*** |  dict  |         | Power plant name and power plant generation ID object (can be multiple)         |
+| generation_percentage         |  int   |  `100`  | Reduce generation calculation by percentage (i.e: if generation tax is applied) |
 
 1. Add entry to `configuration.yaml`, for example:
 ```yaml
@@ -56,6 +56,7 @@ eparkai:
 
 # TODO
 
+ - [ ]  Test with multiple power plants
  - [x]  Add more logging
  - [x]  History import
  - [x]  Add generation percentage deduction (as a tax calculation)
