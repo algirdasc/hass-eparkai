@@ -101,16 +101,22 @@ async def async_insert_statistics(
         _LOGGER.error(f"Received empty generation data for {power_plant_id}")
         return None
 
+    _LOGGER.debug(f"Received generation data for {power_plant_id}: {generation_data}")
+
     metadata = StatisticMetaData(
-                has_mean=False,
-                has_sum=True,
-                name=power_plant_name,
-                source=DOMAIN,
-                statistic_id=statistic_id,
-                unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+        has_mean=False,
+        has_sum=True,
+        name=power_plant_name,
+        source=DOMAIN,
+        statistic_id=statistic_id,
+        unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
     )
 
+    _LOGGER.debug(f"Preparing long-term statistics for {power_plant_name} as {statistic_id}")
+
     statistics = await _async_get_statistics(hass, metadata, generation_data)
+
+    _LOGGER.debug(f"Generated statistics: {statistics}")
 
     async_add_external_statistics(hass, metadata, statistics)
 
@@ -138,11 +144,13 @@ async def _async_get_statistics(
         if sum_ is None:
             sum_ = await get_yesterday_sum(hass, metadata, dt_object)
 
-        statistics.append(StatisticData(
-            start=dt_object.replace(tzinfo=dt_util.get_time_zone("Europe/Vilnius")),
-            state=generated_kwh,
-            sum=sum_
-        ))
+        statistics.append(
+            StatisticData(
+                start=dt_object.replace(tzinfo=dt_util.get_time_zone("Europe/Vilnius")),
+                state=generated_kwh,
+                sum=sum_
+            )
+        )
 
         sum_ += generated_kwh
 
@@ -154,7 +162,7 @@ async def get_yesterday_sum(hass: HomeAssistant, metadata: StatisticMetaData, da
     start = date - timedelta(days=1)
     end = date - timedelta(minutes=1)
 
-    _LOGGER.debug(f"Looking history stats for {statistic_id} for {date} between {start} and {end}")
+    _LOGGER.debug(f"Looking history sum for {statistic_id} for {date} between {start} and {end}")
 
     stat = await get_instance(hass).async_add_executor_job(
         statistics_during_period,
@@ -168,6 +176,11 @@ async def get_yesterday_sum(hass: HomeAssistant, metadata: StatisticMetaData, da
     )
 
     if statistic_id not in stat:
+        _LOGGER.debug(f"No history sum found")
         return 0.0
 
-    return stat[statistic_id][0]["sum"]
+    sum_ = stat[statistic_id][0]["sum"]
+
+    _LOGGER.debug(f"History sum for {statistic_id} = {sum_}")
+
+    return sum_

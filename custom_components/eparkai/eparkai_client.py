@@ -79,6 +79,8 @@ class EParkaiClient:
 
         self.generation[power_plant_id] = {}
 
+        _LOGGER.debug(f"Fetch response: {response.text}")
+
         return response.json()
 
     def update_generation(self, power_plant_id: str, date: datetime) -> None:
