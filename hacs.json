@@ -1,7 +1,7 @@
 {
   "name": "eParkai.lt Solar Energy",
   "content_in_root": false,
-  "domains": ["sensor"],
+  "domains": [],
   "homeassistant": "2023.6.2",
   "render_readme": true
 }

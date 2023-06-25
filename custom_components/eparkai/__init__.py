@@ -10,6 +10,8 @@ from homeassistant.components.recorder.statistics import (
     statistics_during_period,
 )
 from homeassistant.const import (
+    CONF_ID,
+    CONF_NAME,
     CONF_USERNAME,
     CONF_PASSWORD,
     CONF_CLIENT_ID,
@@ -27,7 +29,19 @@ _LOGGER = logging.getLogger(__name__)
 DOMAIN = "eparkai"
 
 CONF_POWER_PLANTS = "power_plants"
+CONF_OBJECT_ADDRESS = "object_address"
 CONF_GENERATION_PERCENTAGE = "generation_percentage"
+CONF_STATISTICS_ID_SUFFIX = "statistics_id_suffix"
+
+POWER_PLANT_SCHEMA = vol.Schema(
+    {
+        vol.Required(CONF_NAME): cv.string,
+        vol.Required(CONF_ID): cv.string,
+        vol.Optional(CONF_OBJECT_ADDRESS, default=None): vol.Any(None, cv.string),
+        vol.Optional(CONF_STATISTICS_ID_SUFFIX, default=""): cv.string,
+        vol.Optional(CONF_GENERATION_PERCENTAGE, default=100): vol.All(int, vol.Range(min=1, max=100))
+    }
+)
 
 CONFIG_SCHEMA = vol.Schema(
     {
@@ -36,8 +50,7 @@ CONFIG_SCHEMA = vol.Schema(
                 vol.Required(CONF_USERNAME): cv.string,
                 vol.Required(CONF_PASSWORD): cv.string,
                 vol.Required(CONF_CLIENT_ID): cv.string,
-                vol.Required(CONF_POWER_PLANTS): vol.Schema({str: str}),
-                vol.Optional(CONF_GENERATION_PERCENTAGE, default=100): vol.All(int, vol.Range(min=0, max=100))
+                vol.Required(CONF_POWER_PLANTS): [POWER_PLANT_SCHEMA],
             }
         )
     },
@@ -65,17 +78,23 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         _LOGGER.debug(f"Logging in to {DOMAIN} site")
         await hass.async_add_executor_job(client.login)
 
-        for power_plant_name, power_plant_id in config[DOMAIN][CONF_POWER_PLANTS].items():
-            _LOGGER.debug(f"Fetching generation data for {power_plant_name}:{power_plant_id}")
-            await hass.async_add_executor_job(client.update_generation, power_plant_id, now)
+        for power_plant in config[DOMAIN][CONF_POWER_PLANTS]:
+            _LOGGER.debug(f"Fetching generation data for {power_plant[CONF_NAME]}")
+            await hass.async_add_executor_job(
+                client.fetch_generation_data,
+                power_plant[CONF_ID],
+                power_plant[CONF_OBJECT_ADDRESS],
+                now
+            )
 
-            _LOGGER.debug(f"Importing generation data for {power_plant_name}:{power_plant_id}")
+            _LOGGER.debug(f"Importing generation data for {power_plant[CONF_NAME]}")
             await async_insert_statistics(
                 hass,
-                power_plant_name,
-                power_plant_id,
-                client.get_generation_data(power_plant_id)
+                power_plant,
+                client.get_generation_data(power_plant[CONF_ID])
             )
+
+            _LOGGER.debug(f"Imported generation data for {power_plant[CONF_NAME]}")
 
     async def async_first_start(event: Event) -> None:
         await async_import_generation(datetime.now())
@@ -89,34 +108,34 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
 async def async_insert_statistics(
         hass: HomeAssistant,
-        power_plant_name: str,
-        power_plant_id: str,
+        power_plant: dict,
         generation_data: dict
 ) -> None:
-    statistic_id = f"{DOMAIN}:energy_generation_{power_plant_id}"
+    id_suffix = power_plant[CONF_STATISTICS_ID_SUFFIX] if CONF_STATISTICS_ID_SUFFIX in power_plant else ""
+    statistic_id = f"{DOMAIN}:energy_generation_{power_plant[CONF_ID]}_{id_suffix}".strip("_")
 
-    _LOGGER.debug(f"Statistic ID = {statistic_id}")
+    _LOGGER.debug(f"Statistic ID for {power_plant[CONF_NAME]} is {statistic_id}")
 
     if not generation_data:
-        _LOGGER.error(f"Received empty generation data for {power_plant_id}")
+        _LOGGER.error(f"Received empty generation data for {statistic_id}")
         return None
 
-    _LOGGER.debug(f"Received generation data for {power_plant_id}: {generation_data}")
+    _LOGGER.debug(f"Received generation data for {statistic_id}: {generation_data}")
 
     metadata = StatisticMetaData(
         has_mean=False,
         has_sum=True,
-        name=power_plant_name,
+        name=power_plant[CONF_NAME],
         source=DOMAIN,
         statistic_id=statistic_id,
         unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
     )
 
-    _LOGGER.debug(f"Preparing long-term statistics for {power_plant_name} as {statistic_id}")
+    _LOGGER.debug(f"Preparing long-term statistics for {statistic_id}")
 
-    statistics = await _async_get_statistics(hass, metadata, generation_data)
+    statistics = await _async_get_statistics(hass, metadata, power_plant, generation_data)
 
-    _LOGGER.debug(f"Generated statistics: {statistics}")
+    _LOGGER.debug(f"Generated statistics for {statistic_id}: {statistics}")
 
     async_add_external_statistics(hass, metadata, statistics)
 
@@ -124,10 +143,12 @@ async def async_insert_statistics(
 async def _async_get_statistics(
         hass: HomeAssistant,
         metadata: StatisticMetaData,
+        power_plant: dict,
         generation_data: dict
 ) -> list[StatisticData]:
+    statistic_id = metadata["statistic_id"]
     statistics: list[StatisticData] = []
-    generation_percentage = hass.data[DOMAIN][CONF_GENERATION_PERCENTAGE]
+    generation_percentage = power_plant[CONF_GENERATION_PERCENTAGE]
     sum_ = None
 
     for ts, generated_kwh in generation_data.items():
@@ -136,8 +157,8 @@ async def _async_get_statistics(
         if generation_percentage != 100:
             generated_percentage_kwh = generated_kwh * (generation_percentage / 100)
             _LOGGER.debug(
-                f"Applying generation percentage of {generation_percentage}%"
-                f"to {generated_kwh} kWh -> {generated_percentage_kwh} kWh"
+                f"Applying generation percentage of {generation_percentage}% "
+                f"for {statistic_id}: {generated_kwh} kWh -> {generated_percentage_kwh} kWh"
             )
             generated_kwh = generated_percentage_kwh
 

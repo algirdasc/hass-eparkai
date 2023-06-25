@@ -30,6 +30,8 @@ class EParkaiClient:
         self.generation: dict = {}
 
     def login(self) -> None:
+        self.generation = {}
+
         response = self.session.post(
             LOGIN_URL.format(self.client_id),
             data={
@@ -51,7 +53,7 @@ class EParkaiClient:
 
         self.form_parser.feed(response.text)
 
-    def fetch(self, power_plant_id: str, date: datetime) -> dict:
+    def fetch(self, power_plant_id: str, object_address: str | None, date: datetime) -> dict:
         headers = {
             "Accept": "application/json",
             "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
@@ -61,6 +63,7 @@ class EParkaiClient:
         response = self.session.post(
             GENERATION_URL.format(self.client_id),
             data={
+                "address": object_address,
                 "period": "week",
                 "current_date": date.strftime("%Y-%m-%d"),
                 "generation_electricity": power_plant_id,
@@ -77,14 +80,17 @@ class EParkaiClient:
 
         response.raise_for_status()
 
-        self.generation[power_plant_id] = {}
-
-        _LOGGER.debug(f"Fetch response: {response.text}")
+        _LOGGER.debug(f"Got response: {response.text}")
 
         return response.json()
 
-    def update_generation(self, power_plant_id: str, date: datetime) -> None:
-        data = self.fetch(power_plant_id, date)
+    def fetch_generation_data(self, power_plant_id: str, object_address: str, date: datetime) -> None:
+        if power_plant_id in self.generation:
+            return
+
+        self.generation[power_plant_id] = {}
+
+        data = self.fetch(power_plant_id, object_address, date)
 
         for d in data:
             if d["command"] != "settings":
