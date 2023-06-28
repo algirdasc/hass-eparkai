@@ -93,6 +93,10 @@ class EParkaiClient:
         data = self.fetch(power_plant_id, object_address, date)
 
         for d in data:
+            if d["command"] == "update_build_id":
+                self.form_parser.set("form_build_id", d["new"])
+                continue
+
             if d["command"] != "settings":
                 continue
 

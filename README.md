@@ -101,7 +101,7 @@ When you add both to your energy dashboard, you will see your owned part as 88% 
 
 # TODO
 
- - [ ]  Test with multiple power plants
+ - [x]  Test with multiple power plants
  - [x]  Add more logging
  - [x]  History import
  - [x]  Add generation percentage deduction (as a tax calculation)
