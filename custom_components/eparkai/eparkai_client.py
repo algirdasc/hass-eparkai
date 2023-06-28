@@ -45,15 +45,17 @@ class EParkaiClient:
 
         response.raise_for_status()
 
-        if len(response.cookies) == 0:
-            _LOGGER.error("Failed to get cookies after login. Possible invalid credentials")
-            return
-
         self.cookies = requests.utils.dict_from_cookiejar(response.cookies)
 
         self.form_parser.feed(response.text)
 
     def fetch(self, power_plant_id: str, object_address: str | None, date: datetime) -> dict:
+        if not self.cookies:
+            raise Exception("Cookies are empty. Check your credentials.")
+
+        if self.form_parser.get("form_id") != "product_generation_form":
+            raise Exception("Form ID not found. Check your credentials.")
+
         headers = {
             "Accept": "application/json",
             "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
@@ -93,10 +95,6 @@ class EParkaiClient:
         data = self.fetch(power_plant_id, object_address, date)
 
         for d in data:
-            if d["command"] == "update_build_id":
-                self.form_parser.set("form_build_id", d["new"])
-                continue
-
             if d["command"] != "settings":
                 continue
 
