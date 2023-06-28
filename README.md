@@ -34,12 +34,12 @@ this Home Assistant (HA) component scrapes solar power generation data every hou
 
 ### Integration
 
-| Name         |  Type  | Required | Default | Description                                                             |
-|--------------|:------:|:--------:|:-------:|-------------------------------------------------------------------------|
-| username     | string |   yes    |         | eParkai.lt username / email                                             |
-| password     | string |   yes    |         | eParkai.lt password                                                     |
-| client_id    | string |   yes    |         | Client ID (see below *How to get your client and generation IDs*)       |
-| power_plants |  list  |   yes    |         | Power plant name and power plant generation ID object (can be multiple) |
+| Name         |  Type  | Required | Default | Description                                                       |
+|--------------|:------:|:--------:|:-------:|-------------------------------------------------------------------|
+| username     | string |   yes    |         | eParkai.lt username / email                                       |
+| password     | string |   yes    |         | eParkai.lt password                                               |
+| client_id    | string |   yes    |         | Client ID (see below *How to get your client and generation IDs*) |
+| power_plants |  list  |   yes    |         | List of power plants                                              |
 
 ### Power plant
 
@@ -76,20 +76,19 @@ power separately. You can do this by adding same power plant twice and setting `
 Example:
 ```yaml
 ...
-    - name: Power plant with taxes (ESO)
+    - name: Power plant with taxes (TAXED)
       id: 123456
-      object_address: Address st. 10
-      statistics_id_suffix: eso
+      statistics_id_suffix: taxed
       generation_percentage: 12
     - name: Power plant with taxes (OWNED)
       id: 123456
-      object_address: Address st. 10
       statistics_id_suffix: owned
       generation_percentage: 88
 ...
 ```
-This way you will see your owned part as 88% and taxed part as 12% of all generated power separately. 
-`statistics_id_suffix` should be set to prevent overriding default statistics id.
+This way two separate statistics will be created: `eparkai:energy_generation_123456_taxed` and`eparkai:energy_generation_123456_owned`. 
+When you add both to your energy dashboard, you will see your owned part as 88% and taxed part as 12% of all generated power separately as stacked column.
+`statistics_id_suffix` must be set to create non-ambiguous ID and prevent overwriting statistics data.
 
 ### How to get your client and generation IDs
 

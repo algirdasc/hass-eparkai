@@ -50,7 +50,7 @@ CONFIG_SCHEMA = vol.Schema(
                 vol.Required(CONF_USERNAME): cv.string,
                 vol.Required(CONF_PASSWORD): cv.string,
                 vol.Required(CONF_CLIENT_ID): cv.string,
-                vol.Required(CONF_POWER_PLANTS): [POWER_PLANT_SCHEMA],
+                vol.Required(CONF_POWER_PLANTS): cv.ensure_list(POWER_PLANT_SCHEMA),
             }
         )
     },
@@ -165,6 +165,8 @@ async def _async_get_statistics(
         if sum_ is None:
             sum_ = await get_yesterday_sum(hass, metadata, dt_object)
 
+        sum_ += generated_kwh
+
         statistics.append(
             StatisticData(
                 start=dt_object.replace(tzinfo=dt_util.get_time_zone("Europe/Vilnius")),
@@ -172,8 +174,6 @@ async def _async_get_statistics(
                 sum=sum_
             )
         )
-
-        sum_ += generated_kwh
 
     return statistics
 
