@@ -1,5 +1,5 @@
 {
-  "name": "eParkai.lt Solar Energy",
+  "name": "eParkai.lt Energy Statistics Import",
   "content_in_root": false,
   "domains": [],
   "homeassistant": "2023.6.2",
