@@ -45,6 +45,8 @@ class EParkaiClient:
 
         response.raise_for_status()
 
+        _LOGGER.debug(f"Got login response: {response.text}")
+
         self.cookies = requests.utils.dict_from_cookiejar(response.cookies)
 
         self.form_parser.feed(response.text)
@@ -82,7 +84,7 @@ class EParkaiClient:
 
         response.raise_for_status()
 
-        _LOGGER.debug(f"Got response: {response.text}")
+        _LOGGER.debug(f"Got fetch response: {response.text}")
 
         return response.json()
 
