@@ -124,6 +124,6 @@ class EParkaiClient:
     def parse_date(date: str) -> str:
         [year, month, day, time] = date.split(" ")
 
-        month = str(MONTHS.index(month) + 1)
+        month = str(MONTHS.index(month.replace("Rugsėo", "Rugsėjo")) + 1)
 
         return " ".join([year, month.zfill(2), day, time])
