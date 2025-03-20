@@ -9,10 +9,6 @@ as well as improve motivation and helps me understand, that this project is usef
 While [eparkai.lt](https://www.eparkai.lt/) does not offer any kind of API for remote solar power plant users, 
 this Home Assistant (HA) component scrapes solar power generation data every hour and imports to long-term HA statistics.
 
-### Disclaimer
-
-**This component is in testing stage! Errors or miscalculation, breaking changes should be expected! Any feedback or requests should be raised as an [issue](https://github.com/algirdasc/hass-eparkai/issues)**.
-
 # Installation
 
 ### HACS

@@ -52,11 +52,8 @@ class EParkaiClient:
         self.form_parser.feed(response.text)
 
     def fetch(self, power_plant_id: str, object_address: str | None, date: datetime) -> dict:
-        if not self.cookies:
-            raise Exception("Cookies are empty. Check your credentials.")
-
         if self.form_parser.get("form_id") != "product_generation_form":
-            raise Exception("Form ID not found. Check your credentials OR login to ESO and confirm contact information.")
+            raise Exception("Form ID not found. Check your credentials OR login to eparkai.lt and confirm contact information.")
 
         headers = {
             "Accept": "application/json",
