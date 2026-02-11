@@ -55,13 +55,13 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
             _LOGGER.debug("HA is stopping, skipping generation import")
             return
         try:
-            _LOGGER.info(f"Prisijungiama prie eParkai.lt ({now})")
+            _LOGGER.info("Logging in to eParkai.lt (%s)", now)
             await hass.async_add_executor_job(client.login)
         except Exception as e:
             _LOGGER.error(f"eParkai login error: {e}")
             return
         for power_plant in config[DOMAIN][CONF_POWER_PLANTS]:
-            _LOGGER.info(f"Gauta naujinimo užklausa [{power_plant[CONF_NAME]}]")
+            _LOGGER.info("Update requested [%s]", power_plant[CONF_NAME])
             try:
                 await hass.async_add_executor_job(
                     client.fetch_generation_data,
@@ -72,7 +72,7 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
             except Exception as e:
                 _LOGGER.error(f"eParkai fetch generation data error [{power_plant[CONF_NAME]}]: {e}")
                 continue
-            _LOGGER.info(f"Importuojama statistika/{power_plant[CONF_NAME]}")
+            _LOGGER.info("Importing statistics [%s]", power_plant[CONF_NAME])
             await async_insert_statistics(
                 hass,
                 power_plant,
@@ -99,6 +99,7 @@ async def async_insert_statistics(
     metadata = StatisticMetaData(
         has_mean=False,
         has_sum=True,
+        mean_type=None,
         name=power_plant[CONF_NAME],
         source=DOMAIN,
         statistic_id=statistic_id,
@@ -114,18 +115,32 @@ async def _async_get_statistics(hass: HomeAssistant, metadata: StatisticMetaData
     statistics: list[StatisticData] = []
     generation_percentage = power_plant[CONF_GENERATION_PERCENTAGE]
     sum_ = None
-    for ts, generated_kwh in generation_data.items():
-        dt_object = datetime.fromtimestamp(ts)
+    tz = dt_util.get_time_zone("Europe/Vilnius")
+
+    # IMPORTANT: sort by timestamp to keep the cumulative sum correct.
+    for ts in sorted(generation_data):
+        generated_kwh = generation_data[ts]
+        dt_object = datetime.fromtimestamp(ts, tz=tz)
+
         if generation_percentage != 100:
             generated_percentage_kwh = generated_kwh * (generation_percentage / 100)
-            _LOGGER.debug(f"Applying generation percentage of {generation_percentage}% for {statistic_id}: {generated_kwh} kWh -> {generated_percentage_kwh} kWh")
+            _LOGGER.debug(
+                "Applying generation percentage of %s%% for %s: %s kWh -> %s kWh",
+                generation_percentage,
+                statistic_id,
+                generated_kwh,
+                generated_percentage_kwh,
+            )
             generated_kwh = generated_percentage_kwh
+
         if sum_ is None:
             sum_ = await get_yesterday_sum(hass, metadata, dt_object)
+
         sum_ += generated_kwh
+
         statistics.append(
             StatisticData(
-                start=dt_object.replace(tzinfo=dt_util.get_time_zone("Europe/Vilnius")),
+                start=dt_object,
                 state=generated_kwh,
                 sum=sum_,
             )
