@@ -1,57 +1,78 @@
 import logging
 from datetime import datetime
-import requests
+
+from aiohttp import ClientError, ClientSession
+
 from .form_parser import FormParser
 
 LOGIN_URL = "https://www.eparkai.lt/user/login?destination=/user/{}/generation"
 GENERATION_URL = "https://www.eparkai.lt/user/{}/generation?ajax_form=1&_wrapper_format=drupal_ajax"
+
 MONTHS = [
-    "Sausio", "Vasario", "Kovo", "Balandžio", "Gegužės", "Birželio", "Liepos", "Rugpjūčio", "Rugsėjo", "Spalio", "Lapkričio", "Gruodžio"
+    "Sausio",
+    "Vasario",
+    "Kovo",
+    "Balandžio",
+    "Gegužės",
+    "Birželio",
+    "Liepos",
+    "Rugpjūčio",
+    "Rugsėjo",
+    "Spalio",
+    "Lapkričio",
+    "Gruodžio",
 ]
+
 _LOGGER = logging.getLogger(__name__)
 
-class EParkaiClient:
-    def __init__(self, username: str, password: str, client_id: str):
-        self.username: str = username
-        self.password: str = password
-        self.client_id: str = client_id
-        self.session: requests.Session = requests.Session()
-        self.cookies: dict | None = None
-        self.form_parser: FormParser = FormParser()
-        self.generation: dict = {}
 
-    def login(self) -> None:
+class EParkaiClient:
+    def __init__(self, session: ClientSession, username: str, password: str, client_id: str):
+        self.username = username
+        self.password = password
+        self.client_id = client_id
+        self.session = session
+        self.form_parser = FormParser()
+        self.generation: dict[str, dict[int, float]] = {}
+
+    async def login(self) -> None:
+        """Login and capture required form fields for subsequent AJAX fetch."""
         self.generation = {}
         try:
-            response = self.session.post(
+            async with self.session.post(
                 LOGIN_URL.format(self.client_id),
                 data={
                     "name": self.username,
                     "pass": self.password,
                     "login_type": 1,
-                    "form_id": "user_login_form"
+                    "form_id": "user_login_form",
                 },
-                allow_redirects=True
-            )
-            response.raise_for_status()
-            _LOGGER.debug(f"Got login response: {response.text}")
-            self.cookies = requests.utils.dict_from_cookiejar(response.cookies)
-            self.form_parser.feed(response.text)
-        except requests.exceptions.RequestException as e:
-            _LOGGER.error(f"eParkai login error: {e}")
-            return
+                allow_redirects=True,
+            ) as resp:
+                resp.raise_for_status()
+                text = await resp.text()
+        except ClientError as e:
+            _LOGGER.error("eParkai login error: %s", e)
+            raise
 
-    def fetch(self, power_plant_id: str, object_address: str | None, date: datetime) -> dict:
+        _LOGGER.debug("Got login response (len=%s)", len(text))
+        self.form_parser.feed(text)
+
+    async def fetch(self, power_plant_id: str, object_address: str | None, date: datetime) -> list[dict]:
         if self.form_parser.get("form_id") != "product_generation_form":
-            raise Exception("Form ID not found. Check your credentials OR login to eparkai.lt and confirm contact information.")
+            raise RuntimeError(
+                "Form ID not found. Check your credentials OR login to eparkai.lt and confirm contact information."
+            )
+
         headers = {
             "Accept": "application/json",
             "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Safari/537.36",
             "X-Requested-With": "XMLHttpRequest",
         }
+
         try:
-            response = self.session.post(
+            async with self.session.post(
                 GENERATION_URL.format(self.client_id),
                 data={
                     "address": object_address,
@@ -65,46 +86,52 @@ class EParkaiClient:
                     "_triggering_element_name": "period",
                 },
                 headers=headers,
-                cookies=self.cookies,
-                allow_redirects=False
-            )
-            response.raise_for_status()
-            _LOGGER.debug(f"Got fetch response: {response.text}")
-            return response.json()
-        except requests.exceptions.RequestException as e:
-            _LOGGER.error(f"eParkai fetch error: {e}")
-            return {}
+                allow_redirects=False,
+            ) as resp:
+                resp.raise_for_status()
+                data = await resp.json()
+        except ClientError as e:
+            _LOGGER.error("eParkai fetch error: %s", e)
+            raise
 
-    def fetch_generation_data(self, power_plant_id: str, object_address: str, date: datetime) -> dict | None:
+        return data
+
+    async def fetch_generation_data(self, power_plant_id: str, object_address: str | None, date: datetime) -> None:
         if power_plant_id in self.generation:
-            return self.generation[power_plant_id]
+            return
+
         self.generation[power_plant_id] = {}
-        data = self.fetch(power_plant_id, object_address, date)
+        data = await self.fetch(power_plant_id, object_address, date)
+
         for d in data:
             if d.get("command") != "settings":
                 continue
-            if "product_generation_form" not in d["settings"] or not d["settings"]["product_generation_form"]:
+
+            settings = d.get("settings") or {}
+            generation = settings.get("product_generation_form")
+            if not generation:
                 continue
-            generation = d["settings"]["product_generation_form"]
-            for idx, value in enumerate(generation["data"]):
+
+            labels = generation.get("labels") or []
+            values = generation.get("data") or []
+
+            for idx, value in enumerate(values):
                 if value is None:
                     value = 0
+
                 try:
-                    date_str = " ".join(generation["labels"][idx])
-                    date_parsed = self.parse_date(date_str)
-                    ts = int(datetime.timestamp(datetime.strptime(date_parsed, "%Y %m %d %H:%M")))
+                    date_str = " ".join(labels[idx])
+                    parsed = self.parse_date(date_str)
+                    ts = int(datetime.timestamp(datetime.strptime(parsed, "%Y %m %d %H:%M")))
                     self.generation[power_plant_id][ts] = float(value)
                 except Exception as e:
-                    _LOGGER.error(f"Failed to parse date '{generation['labels'][idx]}' or value. Error: {e}")
-        return self.generation[power_plant_id]
+                    _LOGGER.error("Failed to parse generation row idx=%s (%s): %s", idx, labels[idx] if idx < len(labels) else None, e)
 
-    def get_generation_data(self, power_plant_id: str) -> dict | None:
-        if power_plant_id not in self.generation:
-            return None
-        return self.generation[power_plant_id]
+    def get_generation_data(self, power_plant_id: str) -> dict[int, float] | None:
+        return self.generation.get(power_plant_id)
 
     @staticmethod
     def parse_date(date: str) -> str:
-        [year, month, day, time] = date.split(" ")
+        year, month, day, time = date.split(" ")
         month = str(MONTHS.index(month.replace("Rugsėo", "Rugsėjo")) + 1)
         return " ".join([year, month.zfill(2), day, time])
