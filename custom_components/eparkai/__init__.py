@@ -152,8 +152,13 @@ async def _async_get_statistics(
     generation_percentage = power_plant[CONF_GENERATION_PERCENTAGE]
     sum_ = None
 
-    for ts, generated_kwh in generation_data.items():
-        dt_object = datetime.fromtimestamp(ts)
+    tz = dt_util.get_time_zone("Europe/Vilnius")
+
+    # IMPORTANT: sort by timestamp to keep the cumulative sum correct.
+    # If the source dict is out-of-order, HA graphs can show "all history" collapsing into a single day.
+    for ts in sorted(generation_data):
+        generated_kwh = generation_data[ts]
+        dt_object = datetime.fromtimestamp(ts, tz=tz)
 
         if generation_percentage != 100:
             generated_percentage_kwh = generated_kwh * (generation_percentage / 100)
@@ -170,9 +175,9 @@ async def _async_get_statistics(
 
         statistics.append(
             StatisticData(
-                start=dt_object.replace(tzinfo=dt_util.get_time_zone("Europe/Vilnius")),
+                start=dt_object,
                 state=generated_kwh,
-                sum=sum_
+                sum=sum_,
             )
         )
 
