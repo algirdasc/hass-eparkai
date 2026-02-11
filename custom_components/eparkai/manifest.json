@@ -5,6 +5,6 @@
   "dependencies": [],
   "codeowners": ["@algirdasc"],
   "issue_tracker": "https://github.com/algirdasc/hass-eparkai/issues",
-  "requirements": ["requests"],
+  "requirements": [],
   "version": "1.0.2"
 }
