@@ -125,6 +125,7 @@ async def async_insert_statistics(
     metadata = StatisticMetaData(
         has_mean=False,
         has_sum=True,
+        mean_type=None,
         name=power_plant[CONF_NAME],
         source=DOMAIN,
         statistic_id=statistic_id,
