@@ -14,7 +14,7 @@ from homeassistant.components.recorder.statistics import (
 from homeassistant.const import (
     CONF_ID, CONF_NAME, CONF_USERNAME, CONF_PASSWORD, CONF_CLIENT_ID, UnitOfEnergy, EVENT_HOMEASSISTANT_STARTED
 )
-from homeassistant.core import HomeAssistant, Event
+from homeassistant.core import HomeAssistant, Event, ServiceCall
 from homeassistant.helpers.event import async_track_time_interval, async_track_time_change
 from homeassistant.helpers.typing import ConfigType
 from homeassistant.util import dt as dt_util
@@ -86,6 +86,14 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     async def async_first_start(event: Event) -> None:
         await async_import_generation(datetime.now())
     hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STARTED, async_first_start)
+
+    async def async_import_now(call: ServiceCall) -> None:
+        _LOGGER.info("Manual import requested via service")
+        await async_import_generation(datetime.now())
+
+    # Service: eparkai.import_now
+    hass.services.async_register(DOMAIN, "import_now", async_import_now)
+
     # Vykdyk update kasdien 5:21 vietoj kas valandą
     async_track_time_change(hass, async_import_generation, hour=5, minute=21, second=0)
     return True
