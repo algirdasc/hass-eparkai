@@ -3,7 +3,11 @@ from datetime import timedelta, datetime
 import homeassistant.helpers.config_validation as cv
 import voluptuous as vol
 from homeassistant.components.recorder import get_instance
-from homeassistant.components.recorder.models import StatisticMetaData, StatisticData
+from homeassistant.components.recorder.models import (
+    StatisticMetaData,
+    StatisticData,
+    StatisticMeanType,
+)
 from homeassistant.components.recorder.statistics import (
     async_add_external_statistics, statistics_during_period,
 )
@@ -97,13 +101,13 @@ async def async_insert_statistics(
         return None
     _LOGGER.debug(f"Received generation data for {statistic_id}: {generation_data}")
     metadata = StatisticMetaData(
-        has_mean=False,
         has_sum=True,
-        mean_type=None,
+        mean_type=StatisticMeanType.NONE,
         name=power_plant[CONF_NAME],
         source=DOMAIN,
         statistic_id=statistic_id,
         unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+        unit_class="energy",
     )
     _LOGGER.debug(f"Preparing long-term statistics for {statistic_id}")
     statistics = await _async_get_statistics(hass, metadata, power_plant, generation_data)
