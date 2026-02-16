@@ -131,6 +131,7 @@ async def async_insert_statistics(hass: HomeAssistant, power_plant: dict, genera
         source=DOMAIN,
         statistic_id=statistic_id,
         unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
+        unit_class="energy",
     )
 
     statistics = await _async_get_statistics(hass, metadata, power_plant, generation_data)
