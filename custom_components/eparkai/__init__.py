@@ -1,4 +1,5 @@
 import logging
+import random
 from datetime import timedelta, datetime
 import homeassistant.helpers.config_validation as cv
 import voluptuous as vol
@@ -83,11 +84,15 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
                 client.get_generation_data(power_plant[CONF_ID])
             )
             _LOGGER.info(f"Import completed for {power_plant[CONF_NAME]}")
+
     async def async_first_start(event: Event) -> None:
         await async_import_generation(datetime.now())
+
     hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STARTED, async_first_start)
-    # Vykdyk update kasdien 5:21 vietoj kas valandą
-    async_track_time_change(hass, async_import_generation, hour=5, minute=21, second=0)
+    # async_track_time_change(hass, async_import_generation, hour=12, minute=random.randint(0, 59), second=0)
+
+    async_track_time_interval(hass, async_import_generation, datetime.timedelta(hours=6, minutes=random.randint(0, 59)))
+
     return True
 
 async def async_insert_statistics(
